@@ -34,7 +34,7 @@ def setup_database():
     """Initialize the database"""
     print("\n🗄️  Setting up database...")
     
-    from api import app, db
+    from app import app, db
     
     with app.app_context():
         db.create_all()
@@ -81,7 +81,7 @@ def main():
     print()
     
     try:
-        from api import app
+        from app import app
         app.run(debug=True, port=5000, use_reloader=True)
     except KeyboardInterrupt:
         print("\n\n👋 Server stopped. Goodbye!")
