@@ -1,252 +1,319 @@
+// ─── Utility Functions ───────────────────────────────────────────────────────
+
+function showNotification(message, type = "info") {
+  // Try the inline notification modal first (exists on profile/view pages)
+  const notificationModal = document.getElementById("notification-modal");
+  if (notificationModal) {
+    const notificationMessage = document.getElementById("notification-message");
+    if (notificationMessage) {
+      notificationMessage.textContent = message;
+      notificationModal.style.display = "block";
+      setTimeout(() => {
+        notificationModal.style.display = "none";
+      }, 3500);
+      return;
+    }
+  }
+
+  // Fallback: create a floating notification
+  const notification = document.createElement("div");
+  notification.textContent = message;
+
+  const colors = {
+    success: "#28a745",
+    error: "#dc3545",
+    info: "#007bff",
+  };
+
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background-color: ${colors[type] || colors.info};
+  `;
+
+  document.body.appendChild(notification);
+  setTimeout(() => (notification.style.opacity = "1"), 100);
+  setTimeout(() => {
+    notification.style.opacity = "0";
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    }, 300);
+  }, 3000);
+}
+
 function showErrorModal(message) {
-  document.getElementById("error-message").innerText = message;
-  document.getElementById("error-modal").style.display = "flex";
+  const errorMsg = document.getElementById("error-message");
+  const errorModal = document.getElementById("error-modal");
+  if (errorMsg && errorModal) {
+    errorMsg.innerText = message;
+    errorModal.style.display = "flex";
+  } else {
+    // Fallback to notification if error modal doesn't exist
+    showNotification(message, "error");
+  }
 }
 
 function closeErrorModal() {
-  document.getElementById("error-modal").style.display = "none";
-}
-
-function closeModal() {
-  document.getElementById("modal").style.display = "none";
-}
-
-function showAddPasswordModal() {
-  document.getElementById("add-password-modal").style.display = "flex";
-}
-
-function showGetPasswordModal() {
-  document.getElementById("get-password-modal").style.display = "block";
-  populateServiceDropdowns();
+  const errorModal = document.getElementById("error-modal");
+  if (errorModal) errorModal.style.display = "none";
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = "none";
+  const modal = document.getElementById(modalId);
+  if (modal) modal.style.display = "none";
 }
 
-function showNotification(message) {
-  const notificationModal = document.getElementById("notification-modal");
-  const notificationMessage = document.getElementById("notification-message");
-
-  notificationMessage.textContent = message;
-  notificationModal.style.display = "block";
-
-  setTimeout(() => {
-    notificationModal.style.display = "none";
-  }, 3500);
+function togglePasswordVisibility(inputId, button) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === "password") {
+    input.type = "text";
+    button.textContent = "🙈";
+  } else {
+    input.type = "password";
+    button.textContent = "👁️";
+  }
 }
+
+function showLoading() {
+  const spinner = document.getElementById("loading-spinner");
+  if (spinner) spinner.style.display = "block";
+}
+
+function hideLoading() {
+  const spinner = document.getElementById("loading-spinner");
+  if (spinner) spinner.style.display = "none";
+}
+
+function disableButton(btnId) {
+  const btn = document.getElementById(btnId);
+  if (btn) btn.disabled = true;
+}
+
+function enableButton(btnId) {
+  const btn = document.getElementById(btnId);
+  if (btn) btn.disabled = false;
+}
+
+
+// ─── Modal Functions ─────────────────────────────────────────────────────────
+
+function showAddPasswordModal() {
+  const modal = document.getElementById("add-password-modal");
+  if (modal) modal.style.display = "flex";
+}
+
+function showGetPasswordModal() {
+  const modal = document.getElementById("get-password-modal");
+  if (modal) {
+    modal.style.display = "block";
+    populateServiceDropdowns();
+  }
+}
+
+
+// ─── Password Functions ──────────────────────────────────────────────────────
 
 async function addPassword() {
-  const service = document.getElementById("add-service").value;
-  const username = document.getElementById("add-username").value;
-  const password = document.getElementById("add-password").value;
+  const serviceEl = document.getElementById("add-service");
+  const usernameEl = document.getElementById("add-username");
+  const passwordEl = document.getElementById("add-password");
+
+  if (!serviceEl || !usernameEl || !passwordEl) return;
+
+  const service = serviceEl.value;
+  const username = usernameEl.value;
+  const password = passwordEl.value;
 
   if (!service || !username || !password) {
-    showErrorModal("Please fill in all fields.");
+    showNotification("Please fill in all fields.", "error");
     return;
   }
 
   try {
     const response = await fetch("/add", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ service, username, password }),
     });
 
     const data = await response.json();
     if (response.ok) {
-      alert(data.success);
+      showNotification(data.success || "Password added!", "success");
       closeModal("add-password-modal");
     } else {
-      showErrorModal(data.error || "An unknown error occurred.");
+      showNotification(data.error || "An unknown error occurred.", "error");
     }
   } catch (error) {
-    showErrorModal("Failed to add password. Please try again.");
+    showNotification("Failed to add password. Please try again.", "error");
     console.error(error);
   }
 }
 
 async function getPassword() {
-  const service = document.getElementById("get-service").value;
-  const username = document.getElementById("get-username").value;
+  const serviceEl = document.getElementById("get-service");
+  const usernameEl = document.getElementById("get-username");
+
+  if (!serviceEl || !usernameEl) return;
+
+  const service = serviceEl.value;
+  const username = usernameEl.value;
 
   if (!service || !username) {
-    showErrorModal("Please select a service and enter a username.");
+    showNotification("Please select a service and enter a username.", "error");
     return;
   }
 
   try {
-    const response = await fetch(`/get/${service}`, {
+    const response = await fetch(`/get/${encodeURIComponent(service)}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username }),
     });
 
     const data = await response.json();
     if (response.ok) {
-      alert(
-        `Username: ${data.credentials[0].username}\nPassword: ${data.credentials[0].password}`
-      );
+      alert(`Username: ${data.username}\nPassword: ${data.password}`);
       closeModal("get-password-modal");
     } else {
-      showErrorModal(data.error || "An unknown error occurred.");
+      showNotification(data.error || "An unknown error occurred.", "error");
     }
   } catch (error) {
-    showErrorModal("Failed to retrieve passwords. Please try again.");
+    showNotification("Failed to retrieve password. Please try again.", "error");
     console.error(error);
+  }
+}
+
+async function copyPassword() {
+  const passwordText = document.getElementById("retrievedPassword");
+  if (!passwordText) return;
+
+  try {
+    await navigator.clipboard.writeText(passwordText.textContent);
+    showNotification("Password copied to clipboard!", "success");
+  } catch (error) {
+    // Fallback for older browsers
+    const textArea = document.createElement("textarea");
+    textArea.value = passwordText.textContent;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+    showNotification("Password copied to clipboard!", "success");
+  }
+}
+
+function populateServiceDropdowns() {
+  const getServiceSelect = document.getElementById("get-service");
+  if (!getServiceSelect) return;
+
+  fetch("/get-services")
+    .then((res) => res.json())
+    .then((services) => {
+      getServiceSelect.innerHTML = "";
+      services.forEach((service) => {
+        const option = document.createElement("option");
+        option.value = service;
+        option.textContent = service;
+        getServiceSelect.appendChild(option);
+      });
+    })
+    .catch((error) => {
+      console.error("Error loading services:", error);
+    });
+}
+
+
+// ─── Auth Functions ──────────────────────────────────────────────────────────
+
+async function login() {
+  const usernameEl = document.getElementById("login-username");
+  const passwordEl = document.getElementById("login-password");
+  const errorElement = document.getElementById("login-error");
+
+  if (!usernameEl || !passwordEl) return;
+
+  const username = usernameEl.value.trim();
+  const password = passwordEl.value.trim();
+
+  if (errorElement) errorElement.textContent = "";
+
+  if (!username || !password) {
+    if (errorElement) errorElement.textContent = "Please fill in all fields.";
+    return;
+  }
+
+  try {
+    const response = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      window.location.href = "/profile";
+    } else {
+      if (errorElement) errorElement.textContent = data.error || "Login failed.";
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+    if (errorElement) errorElement.textContent = "Failed to log in. Please try again.";
   }
 }
 
 async function register() {
-  const username = document.getElementById("register-username").value.trim();
-  const password = document.getElementById("register-password").value.trim();
+  const usernameEl = document.getElementById("register-username");
+  const passwordEl = document.getElementById("register-password");
   const errorElement = document.getElementById("signup-error");
 
-  errorElement.textContent = "";
+  if (!usernameEl || !passwordEl) return;
+
+  const username = usernameEl.value.trim();
+  const password = passwordEl.value.trim();
+
+  if (errorElement) errorElement.textContent = "";
 
   if (!username || !password) {
-    errorElement.textContent = "Please fill in all fields.";
-    return;
-  }
-
-  showLoading();
-  disableButton("signup-btn");
-
-  try {
-    const response = await fetch("/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      window.location.href = "/profile";
-    } else {
-      errorElement.textContent = data.error || "An unknown error occurred.";
-    }
-  } catch (error) {
-    errorElement.textContent = "Failed to sign up. Please try again.";
-    console.error(error);
-  } finally {
-    hideLoading();
-    enableButton("signup-btn");
-  }
-}
-
-async function signup() {
-  const username = document.getElementById("signup-username").value.trim();
-  const password = document.getElementById("signup-password").value.trim();
-  const confirmPassword = document
-    .getElementById("signup-confirm-password")
-    .value.trim();
-  const errorElement = document.getElementById("signup-error");
-
-  // Clear previous errors
-  errorElement.textContent = "";
-
-  // Validation
-  if (!username || !password || !confirmPassword) {
-    errorElement.textContent = "Please fill in all fields.";
-    return;
-  }
-
-  if (password !== confirmPassword) {
-    errorElement.textContent = "Passwords do not match.";
+    if (errorElement) errorElement.textContent = "Please fill in all fields.";
     return;
   }
 
   if (password.length < 6) {
-    errorElement.textContent = "Password must be at least 6 characters long.";
+    if (errorElement) errorElement.textContent = "Password must be at least 6 characters long.";
     return;
   }
 
-  try {
-    console.log("Attempting signup for:", username); // Debug log
+  showLoading();
 
+  try {
     const response = await fetch("/register", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
 
-    console.log("Signup response status:", response.status); // Debug log
     const data = await response.json();
-    console.log("Signup response data:", data); // Debug log
-
     if (response.ok) {
-      alert("Registration successful! Redirecting to your profile...");
-      // Redirect to profile page
       window.location.href = "/profile";
     } else {
-      errorElement.textContent = data.error || "Registration failed.";
+      if (errorElement) errorElement.textContent = data.error || "Registration failed.";
     }
   } catch (error) {
-    console.error("Signup error:", error);
-    errorElement.textContent = "Registration failed. Please try again.";
-  }
-}
-
-function showLoading() {
-  document.getElementById("loading-spinner").style.display = "block";
-}
-function hideLoading() {
-  document.getElementById("loading-spinner").style.display = "none";
-}
-function disableButton(btnId) {
-  const btn = document.getElementById(btnId);
-  if (btn) btn.disabled = true;
-}
-function enableButton(btnId) {
-  const btn = document.getElementById(btnId);
-  if (btn) btn.disabled = false;
-}
-
-async function login() {
-  const username = document.getElementById("login-username").value.trim();
-  const password = document.getElementById("login-password").value.trim();
-  const errorElement = document.getElementById("login-error");
-
-  errorElement.textContent = "";
-
-  if (!username || !password) {
-    errorElement.textContent = "Please fill in all fields.";
-    return;
-  }
-
-  try {
-    console.log("Attempting login for:", username); // Debug log
-
-    const response = await fetch("/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    console.log("Login response status:", response.status); // Debug log
-    const data = await response.json();
-    console.log("Login response data:", data); // Debug log
-
-    if (response.ok) {
-      console.log("Login successful, redirecting..."); // Debug log
-      alert("Login successful!");
-      window.location.href = "/profile";
-    } else {
-      errorElement.textContent = data.error || "Login failed.";
-    }
-  } catch (error) {
-    console.error("Login error:", error);
-    errorElement.textContent = "Failed to log in. Please try again.";
+    console.error("Register error:", error);
+    if (errorElement) errorElement.textContent = "Failed to sign up. Please try again.";
+  } finally {
+    hideLoading();
   }
 }
 
@@ -254,22 +321,17 @@ async function logout() {
   try {
     const response = await fetch("/logout", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
 
-    const data = await response.json();
     if (response.ok) {
-      alert("Logged out successfully!");
-      // Redirect to login page
       window.location.href = "/";
     } else {
-      alert("Error logging out: " + (data.error || "Unknown error"));
+      showNotification("Error logging out.", "error");
     }
   } catch (error) {
     console.error("Logout error:", error);
-    alert("Failed to log out. Please try again.");
+    showNotification("Failed to log out. Please try again.", "error");
   }
 }
 
@@ -279,43 +341,30 @@ async function checkAuthStatus() {
     const data = await response.json();
 
     const logoutBtn = document.getElementById("logout-btn");
-    const loginSection = document.getElementById("login-section");
 
     if (data.logged_in) {
       if (logoutBtn) logoutBtn.style.display = "block";
-      if (loginSection) loginSection.style.display = "none";
     } else {
       if (logoutBtn) logoutBtn.style.display = "none";
-      if (loginSection) loginSection.style.display = "block";
     }
   } catch (error) {
     console.error("Auth check error:", error);
   }
 }
 
-// Added this function to check if user is properly logged in
-async function checkAuthenticationStatus() {
-  try {
-    const response = await fetch("/check-session");
-    const data = await response.json();
-
-    console.log("Auth status:", data); // Debug log
-
-    if (!data.logged_in) {
-      // User is not logged in, redirect to home
-      window.location.href = "/";
-    }
-
-    return data.logged_in;
-  } catch (error) {
-    console.error("Auth check error:", error);
-    return false;
-  }
-}
-
-// Call this when profile page loads
+// Check auth on profile page
 if (window.location.pathname === "/profile") {
-  document.addEventListener("DOMContentLoaded", checkAuthenticationStatus);
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const response = await fetch("/check-session");
+      const data = await response.json();
+      if (!data.logged_in) {
+        window.location.href = "/";
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+    }
+  });
 }
 
 function exitApp() {
@@ -323,74 +372,43 @@ function exitApp() {
   window.location.href = "about:blank";
 }
 
-async function checkSession() {
-  try {
-    const response = await fetch("/check-session");
-    const data = await response.json();
 
-    if (data.logged_in) {
-      document.getElementById("auth-section").style.display = "none";
-      document.getElementById("password-section").style.display = "block";
-    } else {
-      document.getElementById("auth-section").style.display = "block";
-      document.getElementById("password-section").style.display = "none";
-    }
-  } catch (error) {
-    console.error("Failed to check session:", error);
-  }
-}
+// ─── Retrieve Password Modal Functions ───────────────────────────────────────
 
-function populateServiceDropdowns() {
-  fetch("/get-services")
-    .then((res) => res.json())
-    .then((services) => {
-      const getServiceSelect = document.getElementById("get-service");
-      if (getServiceSelect) {
-        getServiceSelect.innerHTML = "";
-        services.forEach((service) => {
-          const option = document.createElement("option");
-          option.value = service;
-          option.textContent = service;
-          getServiceSelect.appendChild(option);
-        });
-      }
-    });
-}
-
-// Modal control functions
 function openGetPasswordModal() {
   const modal = document.getElementById("getPasswordModal");
+  if (!modal) return;
   modal.style.display = "block";
-
-  // Load available services
   loadUserServices();
 
-  // Reset form
-  document.getElementById("getService").value = "";
-  document.getElementById("getUsername").value = "";
-  document.getElementById("passwordResult").style.display = "none";
+  const serviceEl = document.getElementById("getService");
+  const usernameEl = document.getElementById("getUsername");
+  const resultEl = document.getElementById("passwordResult");
+  if (serviceEl) serviceEl.value = "";
+  if (usernameEl) usernameEl.value = "";
+  if (resultEl) resultEl.style.display = "none";
 }
 
 function closeGetPasswordModal() {
   const modal = document.getElementById("getPasswordModal");
-  modal.style.display = "none";
+  if (modal) modal.style.display = "none";
 }
 
 // Close modal when clicking outside
 window.onclick = function (event) {
   const modal = document.getElementById("getPasswordModal");
-  if (event.target == modal) {
+  if (modal && event.target === modal) {
     closeGetPasswordModal();
   }
 };
 
-// Load user's services into dropdown
 async function loadUserServices() {
+  const serviceSelect = document.getElementById("getService");
+  if (!serviceSelect) return;
+
   try {
     const response = await fetch("/get-services");
     const services = await response.json();
-
-    const serviceSelect = document.getElementById("getService");
 
     // Clear existing options except the first one
     while (serviceSelect.children.length > 1) {
@@ -406,17 +424,8 @@ async function loadUserServices() {
     });
 
     // Add common services that might not be in user's list
-    const commonServices = [
-      "Facebook",
-      "Twitter",
-      "Instagram",
-      "Netflix",
-      "Spotify",
-      "TikTok",
-      "Other",
-    ];
+    const commonServices = ["Facebook", "Twitter", "Instagram", "Netflix", "Spotify", "TikTok", "Other"];
     commonServices.forEach((service) => {
-      // Check if service already exists
       let exists = false;
       for (let i = 1; i < serviceSelect.children.length; i++) {
         if (serviceSelect.children[i].value === service) {
@@ -424,7 +433,6 @@ async function loadUserServices() {
           break;
         }
       }
-
       if (!exists) {
         const option = document.createElement("option");
         option.value = service;
@@ -437,117 +445,55 @@ async function loadUserServices() {
   }
 }
 
-// Retrieve password function
 async function retrievePassword() {
-  const service = document.getElementById("getService").value.trim();
-  const username = document.getElementById("getUsername").value.trim();
+  const serviceEl = document.getElementById("getService");
+  const usernameEl = document.getElementById("getUsername");
   const resultDiv = document.getElementById("passwordResult");
   const passwordDisplay = document.getElementById("retrievedPassword");
 
-  // Validation
+  if (!serviceEl || !usernameEl) return;
+
+  const service = serviceEl.value.trim();
+  const username = usernameEl.value.trim();
+
   if (!service) {
-    alert("Please select a service.");
+    showNotification("Please select a service.", "error");
     return;
   }
-
   if (!username) {
-    alert("Please enter a username/email.");
+    showNotification("Please enter a username/email.", "error");
     return;
   }
 
   try {
     const response = await fetch(`/get/${encodeURIComponent(service)}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: username }),
     });
 
     const data = await response.json();
 
     if (response.ok) {
-      // Display the password
-      passwordDisplay.textContent = data.password;
-      resultDiv.style.display = "block";
-
-      // Show success message
+      if (passwordDisplay) passwordDisplay.textContent = data.password;
+      if (resultDiv) resultDiv.style.display = "block";
       showNotification("Password retrieved successfully!", "success");
     } else {
-      // Show error message
-      alert("Error: " + (data.error || "Password not found"));
-      resultDiv.style.display = "none";
+      showNotification("Error: " + (data.error || "Password not found"), "error");
+      if (resultDiv) resultDiv.style.display = "none";
     }
   } catch (error) {
     console.error("Error retrieving password:", error);
-    alert("Failed to retrieve password. Please try again.");
-    resultDiv.style.display = "none";
+    showNotification("Failed to retrieve password. Please try again.", "error");
+    if (resultDiv) resultDiv.style.display = "none";
   }
 }
 
-// Copy password to clipboard
-async function copyPassword() {
-  const passwordText = document.getElementById("retrievedPassword").textContent;
 
-  try {
-    await navigator.clipboard.writeText(passwordText);
-    showNotification("Password copied to clipboard!", "success");
-  } catch (error) {
-    // Fallback for older browsers
-    const textArea = document.createElement("textarea");
-    textArea.value = passwordText;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textArea);
-    showNotification("Password copied to clipboard!", "success");
-  }
-}
-
-// Notification function
-function showNotification(message, type = "info") {
-  // Create notification element
-  const notification = document.createElement("div");
-  notification.className = `notification ${type}`;
-  notification.textContent = message;
-
-  // Style the notification
-  notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 5px;
-        color: white;
-        font-weight: bold;
-        z-index: 10000;
-        opacity: 0;
-        transition: opacity 0.3s;
-        ${
-          type === "success"
-            ? "background-color: #28a745;"
-            : "background-color: #007bff;"
-        }
-    `;
-
-  // Add to page
-  document.body.appendChild(notification);
-
-  // Show notification
-  setTimeout(() => (notification.style.opacity = "1"), 100);
-
-  // Remove notification after 3 seconds
-  setTimeout(() => {
-    notification.style.opacity = "0";
-    setTimeout(() => document.body.removeChild(notification), 300);
-  }, 3000);
-}
+// ─── Page Initialization ─────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
-  checkSession();
-  populateServiceDropdowns();
-  fetchPasswords();
-
+  // Bind login form
   const loginForm = document.getElementById("login-form");
   if (loginForm) {
     loginForm.addEventListener("submit", function (e) {
@@ -556,6 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Bind signup form
   const signupForm = document.getElementById("signup-form");
   if (signupForm) {
     signupForm.addEventListener("submit", function (e) {
@@ -564,5 +511,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Populate service dropdowns only if they exist
+  if (document.getElementById("get-service")) {
+    populateServiceDropdowns();
+  }
+
+  // Check auth status (shows/hides logout button)
   checkAuthStatus();
+
+  // Dropdown menu toggle
+  const dropdownBtn = document.getElementById("dropdownBtn");
+  if (dropdownBtn) {
+    dropdownBtn.addEventListener("click", function () {
+      const content = document.getElementById("dropdownContent");
+      if (content) {
+        content.style.display = content.style.display === "block" ? "none" : "block";
+      }
+    });
+  }
 });
