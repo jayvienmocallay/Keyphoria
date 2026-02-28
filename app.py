@@ -34,6 +34,12 @@ if DATABASE_URL:
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    # Serverless-friendly pool settings
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'connect_args': {'options': '-c statement_timeout=30000'},
+    }
 elif IS_PRODUCTION:
     # Vercel's filesystem is read-only except /tmp/
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/password_manager.db'
@@ -133,9 +139,18 @@ class Password(db.Model):
         }
 
 
-# Initialize database
-with app.app_context():
-    db.create_all()
+# Initialize database tables (deferred for serverless compatibility)
+_db_initialized = False
+
+@app.before_request
+def ensure_tables():
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            db.create_all()
+            _db_initialized = True
+        except Exception as e:
+            app.logger.error(f'Database init error: {e}')
 
 
 # Authentication helpers
@@ -498,11 +513,6 @@ def not_found(error):
 def internal_error(error):
     db.session.rollback()
     return jsonify({'error': 'Internal server error'}), 500
-
-
-# Vercel entry point
-def handler(request):
-    return app(request)
 
 
 if __name__ == '__main__':
