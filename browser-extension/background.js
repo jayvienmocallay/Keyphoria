@@ -1,9 +1,34 @@
 // Background Service Worker for Password Manager Extension
 
-// Handle extension installation
-chrome.runtime.onInstalled.addListener(() => {
+// Import config
+importScripts("config.js");
+
+let API_URL = "http://localhost:5000";
+
+// Initialize config
+async function initBackgroundConfig() {
+  try {
+    API_URL = await Config.getApiUrl();
+  } catch (error) {
+    console.warn("Using default API URL:", API_URL);
+  }
+}
+
+// Initialize on install
+chrome.runtime.onInstalled.addListener(async () => {
   console.log("Password Manager Extension installed");
+  await initBackgroundConfig();
+
+  // Context menu for saving passwords
+  chrome.contextMenus.create({
+    id: "savePassword",
+    title: "Save Password with Password Manager",
+    contexts: ["editable"],
+  });
 });
+
+// Also init on service worker startup
+initBackgroundConfig();
 
 // Listen for messages from content scripts or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -13,19 +38,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === "saveCredentials") {
     handleSaveCredentials(request.credentials, sendResponse);
     return true;
+  } else if (request.action === "getApiUrl") {
+    // Allow content scripts to request the API URL
+    sendResponse({ url: API_URL });
+    return false;
   }
 });
 
 // Get credentials for a specific domain
 async function handleGetCredentials(domain, sendResponse) {
   try {
-    const response = await fetch("http://localhost:5000/get-all-passwords", {
+    const response = await fetch(`${API_URL}/get-all-passwords`, {
       credentials: "include",
     });
 
     if (response.ok) {
       const passwords = await response.json();
-      // Filter passwords for the current domain
       const matching = passwords.filter((pwd) =>
         pwd.service.toLowerCase().includes(domain.toLowerCase())
       );
@@ -41,7 +69,7 @@ async function handleGetCredentials(domain, sendResponse) {
 // Save new credentials
 async function handleSaveCredentials(credentials, sendResponse) {
   try {
-    const response = await fetch("http://localhost:5000/add", {
+    const response = await fetch(`${API_URL}/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -61,15 +89,7 @@ async function handleSaveCredentials(credentials, sendResponse) {
   }
 }
 
-// Context menu for saving passwords
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "savePassword",
-    title: "Save Password with Password Manager",
-    contexts: ["editable"],
-  });
-});
-
+// Context menu click handler
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "savePassword") {
     chrome.tabs.sendMessage(tab.id, { action: "openSaveDialog" });
