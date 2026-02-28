@@ -34,15 +34,20 @@ if DATABASE_URL:
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+elif IS_PRODUCTION:
+    # Vercel's filesystem is read-only except /tmp/
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/password_manager.db'
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///password_manager.db'
 
 # CORS configuration
-# In production, restrict to specific extension ID via EXTENSION_ORIGIN env var
-# In development, allow localhost and any extension origin
 if IS_PRODUCTION:
-    allowed_origins = os.getenv('CORS_ORIGINS', '').split(',')
-    allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
+    cors_env = os.getenv('CORS_ORIGINS', '')
+    if cors_env:
+        allowed_origins = [o.strip() for o in cors_env.split(',') if o.strip()]
+    else:
+        # Allow all extension origins until specific ID is known
+        allowed_origins = ['chrome-extension://*', 'moz-extension://*']
 else:
     allowed_origins = ['chrome-extension://*', 'moz-extension://*', 'http://localhost:*']
 
@@ -70,8 +75,11 @@ def get_encryption_key():
 
     # 3. Generate and persist a new key if none exists
     key = Fernet.generate_key()
-    with open(key_file, 'wb') as f:
-        f.write(key)
+    try:
+        with open(key_file, 'wb') as f:
+            f.write(key)
+    except OSError:
+        pass  # Read-only filesystem (e.g., Vercel) — key lives in memory only
     return key
 
 
