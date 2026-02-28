@@ -1,10 +1,19 @@
-// Configuration
-const API_URL = "http://localhost:5000";
+// Configuration - loaded from config.js
+let API_URL = "http://localhost:5000"; // Default, overridden by config
 
 // State
 let currentUser = null;
 let passwords = [];
 let editingPasswordId = null;
+
+// Initialize config
+async function initConfig() {
+  try {
+    API_URL = await Config.getApiUrl();
+  } catch (error) {
+    console.warn("Using default API URL:", API_URL);
+  }
+}
 
 // Utility Functions
 function showNotification(message, isError = false) {
@@ -264,29 +273,45 @@ function renderPasswords(passwordsToRender) {
   container.innerHTML = passwordsToRender
     .map(
       (pwd) => `
-    <div class="password-item">
+    <div class="password-item" data-id="${pwd.id}">
       <div class="password-info">
         <div class="password-service">${escapeHtml(pwd.service)}</div>
         <div class="password-username">${escapeHtml(pwd.username)}</div>
       </div>
       <div class="password-actions">
-        <button class="btn btn-secondary btn-sm" onclick="copyPasswordToClipboard('${escapeHtml(
-          pwd.password
-        )}')">Copy</button>
-        <button class="btn btn-secondary btn-sm" onclick="fillPassword(${
-          pwd.id
-        })">Fill</button>
-        <button class="btn btn-secondary btn-sm" onclick="openEditModal(${
-          pwd.id
-        })">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deletePassword(${
-          pwd.id
-        }, '${escapeHtml(pwd.service)}')">Delete</button>
+        <button class="btn btn-secondary btn-sm" data-action="copy" data-id="${pwd.id}">Copy</button>
+        <button class="btn btn-secondary btn-sm" data-action="fill" data-id="${pwd.id}">Fill</button>
+        <button class="btn btn-secondary btn-sm" data-action="edit" data-id="${pwd.id}">Edit</button>
+        <button class="btn btn-danger btn-sm" data-action="delete" data-id="${pwd.id}">Delete</button>
       </div>
     </div>
   `
     )
     .join("");
+
+  // Event delegation — handle all button clicks safely
+  container.querySelectorAll("button[data-action]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = parseInt(btn.dataset.id);
+      const pwd = passwords.find((p) => p.id === id);
+      if (!pwd) return;
+
+      switch (btn.dataset.action) {
+        case "copy":
+          copyPasswordToClipboard(pwd.password);
+          break;
+        case "fill":
+          fillPassword(id);
+          break;
+        case "edit":
+          openEditModal(id);
+          break;
+        case "delete":
+          deletePassword(id, pwd.service);
+          break;
+      }
+    });
+  });
 }
 
 function escapeHtml(text) {
@@ -399,7 +424,10 @@ function searchPasswords() {
 }
 
 // Event Listeners
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Load config first
+  await initConfig();
+
   // Auth events
   document.getElementById("login-btn").addEventListener("click", login);
   document.getElementById("register-btn").addEventListener("click", register);
@@ -463,6 +491,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.key === "Enter") register();
     });
 
-  // Initialize
-  checkSession();
+  // Initialize - check if already logged in
+  await checkSession();
 });
