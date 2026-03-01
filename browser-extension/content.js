@@ -281,20 +281,132 @@
           .split(".")[0];
         const capitalized = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
 
-        // Store pending credentials for the popup to pick up
-        chrome.storage.local.set({
-          kp_pending: {
-            service: capitalized,
-            username: username,
-            password: password,
-            domain: currentDomain,
-            timestamp: Date.now(),
-          },
-        });
-
-        showNotification("🔐 Open Keyphoria extension to save this password", "info");
+        // Small delay so the page processes the submit first
+        setTimeout(() => {
+          showSavePopup(capitalized, username, password);
+        }, 500);
       }
     });
+  }
+
+  // Show a small save-password popup in the top-right corner (near extension area)
+  function showSavePopup(service, username, password) {
+    // Remove any existing popup
+    const existing = document.getElementById("kp-save-popup");
+    if (existing) existing.remove();
+
+    const popup = document.createElement("div");
+    popup.id = "kp-save-popup";
+    popup.style.cssText = `
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      width: 280px;
+      background: linear-gradient(135deg, #0f0c29, #302b63);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 14px 16px;
+      z-index: 2147483647;
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: kpPopIn 0.3s ease;
+    `;
+
+    popup.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+        <span style="font-size: 18px;">🔐</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; font-size: 13px;">Keyphoria</div>
+          <div style="font-size: 11px; color: rgba(255,255,255,0.5);">Save password for ${service}?</div>
+        </div>
+        <span id="kp-popup-close" style="cursor: pointer; font-size: 18px; color: rgba(255,255,255,0.4); line-height: 1;">&times;</span>
+      </div>
+      <div style="background: rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px;">
+        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">Username</div>
+        <div style="font-size: 13px; font-weight: 600; margin-top: 2px;">${username}</div>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button id="kp-popup-save" style="
+          flex: 1;
+          background: linear-gradient(135deg, #6a11cb, #2575fc);
+          color: white;
+          border: none;
+          padding: 8px;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 12px;
+          cursor: pointer;
+        ">Save</button>
+        <button id="kp-popup-dismiss" style="
+          flex: 1;
+          background: rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.7);
+          border: 1px solid rgba(255,255,255,0.1);
+          padding: 8px;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 12px;
+          cursor: pointer;
+        ">Dismiss</button>
+      </div>
+    `;
+
+    // Add animation keyframes
+    if (!document.getElementById("kp-popup-styles")) {
+      const style = document.createElement("style");
+      style.id = "kp-popup-styles";
+      style.textContent = `
+        @keyframes kpPopIn {
+          from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes kpPopOut {
+          from { opacity: 1; transform: translateY(0) scale(1); }
+          to { opacity: 0; transform: translateY(-10px) scale(0.95); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(popup);
+
+    function dismissPopup() {
+      popup.style.animation = "kpPopOut 0.2s ease";
+      setTimeout(() => popup.remove(), 200);
+    }
+
+    // Save button
+    popup.querySelector("#kp-popup-save").addEventListener("click", async () => {
+      const saveBtn = popup.querySelector("#kp-popup-save");
+      saveBtn.textContent = "Saving...";
+      saveBtn.style.opacity = "0.7";
+
+      try {
+        const response = await chrome.runtime.sendMessage({
+          action: "saveCredentials",
+          credentials: { service, username, password },
+        });
+
+        if (response && response.success) {
+          showNotification("✅ Password saved to Keyphoria!", "success");
+        } else {
+          showNotification(response?.error || "Failed to save. Log in to Keyphoria first.", "error");
+        }
+      } catch (err) {
+        showNotification("Failed to save. Log in to Keyphoria extension first.", "error");
+      }
+      dismissPopup();
+    });
+
+    // Dismiss / close
+    popup.querySelector("#kp-popup-dismiss").addEventListener("click", dismissPopup);
+    popup.querySelector("#kp-popup-close").addEventListener("click", dismissPopup);
+
+    // Auto-dismiss after 30 seconds
+    setTimeout(() => {
+      if (document.body.contains(popup)) dismissPopup();
+    }, 30000);
   }
 
   // Listen for messages from background script
@@ -305,21 +417,9 @@
         const username = last.usernameField.value.trim();
         const password = last.passwordField.value;
         if (username && password) {
-          const serviceName = currentDomain
-            .replace("www.", "")
-            .split(".")[0];
+          const serviceName = currentDomain.replace("www.", "").split(".")[0];
           const capitalized = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
-
-          chrome.storage.local.set({
-            kp_pending: {
-              service: capitalized,
-              username: username,
-              password: password,
-              domain: currentDomain,
-              timestamp: Date.now(),
-            },
-          });
-          showNotification("🔐 Open Keyphoria extension to save this password", "info");
+          showSavePopup(capitalized, username, password);
         } else {
           showNotification("No credentials detected on this page", "info");
         }
