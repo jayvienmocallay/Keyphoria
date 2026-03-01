@@ -65,38 +65,59 @@ async function apiCall(endpoint, method = "GET", body = null) {
 
 // Authentication Functions
 async function checkSession() {
-  try {
-    // First try the API session
-    const data = await apiCall("/check-session");
-    if (data.logged_in) {
-      currentUser = data.username;
-      showMainSection();
-      await loadPasswords();
-      return;
+  // Check cached login state first — show UI instantly
+  const stored = await chrome.storage.local.get([
+    "kp_user",
+    "kp_pass",
+    "kp_logged_in",
+    "kp_cached_passwords",
+  ]);
+
+  if (stored.kp_logged_in && stored.kp_user) {
+    // Instantly show main section from cache (no loading spinner)
+    currentUser = stored.kp_user;
+    showMainSection();
+
+    // Show cached passwords immediately if available
+    if (stored.kp_cached_passwords) {
+      passwords = stored.kp_cached_passwords;
+      renderPasswords(passwords);
     }
-  } catch (error) {
-    // Session check failed (expected for cross-origin)
+
+    // Silently re-auth and refresh passwords in background
+    silentRefresh(stored.kp_user, stored.kp_pass);
+    return;
   }
 
-  // Try re-authenticating with stored credentials
-  try {
-    const stored = await chrome.storage.local.get(["kp_user", "kp_pass"]);
-    if (stored.kp_user && stored.kp_pass) {
-      const data = await apiCall("/login", "POST", {
-        username: stored.kp_user,
-        password: stored.kp_pass,
-      });
-      currentUser = data.username;
-      showMainSection();
-      await loadPasswords();
-      return;
-    }
-  } catch (error) {
-    // Stored credentials invalid, clear them
-    await chrome.storage.local.remove(["kp_user", "kp_pass"]);
-  }
-
+  // Not logged in — show auth form
   showAuthSection();
+}
+
+// Re-authenticate and refresh passwords without showing loading spinner
+async function silentRefresh(username, pass) {
+  try {
+    // Re-authenticate
+    await apiCall("/login", "POST", { username, password: pass });
+
+    // Fetch fresh passwords
+    const data = await apiCall("/get-all-passwords");
+    passwords = data;
+    renderPasswords(passwords);
+
+    // Cache the fresh passwords
+    await chrome.storage.local.set({ kp_cached_passwords: data });
+  } catch (error) {
+    // If re-auth fails, credentials are invalid — force re-login
+    await chrome.storage.local.remove([
+      "kp_user",
+      "kp_pass",
+      "kp_logged_in",
+      "kp_cached_passwords",
+    ]);
+    currentUser = null;
+    passwords = [];
+    showAuthSection();
+  }
 }
 
 async function login() {
@@ -115,8 +136,11 @@ async function login() {
     showLoading();
     const data = await apiCall("/login", "POST", { username, password });
     currentUser = data.username;
-    // Persist login for next popup open
-    await chrome.storage.local.set({ kp_user: username, kp_pass: password });
+    await chrome.storage.local.set({
+      kp_user: username,
+      kp_pass: password,
+      kp_logged_in: true,
+    });
     showNotification("Login successful!");
     showMainSection();
     await loadPasswords();
@@ -158,8 +182,11 @@ async function register() {
     showLoading();
     const data = await apiCall("/register", "POST", { username, password });
     currentUser = username;
-    // Persist login for next popup open
-    await chrome.storage.local.set({ kp_user: username, kp_pass: password });
+    await chrome.storage.local.set({
+      kp_user: username,
+      kp_pass: password,
+      kp_logged_in: true,
+    });
     showNotification("Registration successful!");
     showMainSection();
     await loadPasswords();
@@ -175,7 +202,12 @@ async function logout() {
     await apiCall("/logout", "POST");
     currentUser = null;
     passwords = [];
-    await chrome.storage.local.remove(["kp_user", "kp_pass"]);
+    await chrome.storage.local.remove([
+      "kp_user",
+      "kp_pass",
+      "kp_logged_in",
+      "kp_cached_passwords",
+    ]);
     showNotification("Logged out successfully");
     showAuthSection();
   } catch (error) {
@@ -190,6 +222,8 @@ async function loadPasswords() {
     const data = await apiCall("/get-all-passwords");
     passwords = data;
     renderPasswords(passwords);
+    // Cache passwords for instant popup next time
+    await chrome.storage.local.set({ kp_cached_passwords: data });
   } catch (error) {
     showNotification("Failed to load passwords", true);
   } finally {
