@@ -106,10 +106,3 @@ Password-Manager/
 | `DATABASE_URL` | Supabase PostgreSQL connection string |
 | `FLASK_ENV` | `production` or `development` |
 | `CORS_ORIGINS` | Allowed CORS origins |
-
----
-
-## 📞 Contact
-
-- **Name**: Jayvien Mocallay
-- **Email**: [jayvienmocallay7@example.com](mailto:jayvienmocallay7@example.com)
