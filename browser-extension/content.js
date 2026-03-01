@@ -38,6 +38,9 @@
 
         // Add autofill button
         addAutofillButton(form, usernameFields[0], passwordFields[0]);
+
+        // Intercept form submission to offer saving
+        interceptFormSubmit(form, usernameFields[0], passwordFields[0]);
       }
     });
   }
@@ -263,10 +266,66 @@
     }, 3000);
   }
 
+  // Intercept form submissions to offer saving credentials
+  function interceptFormSubmit(form, usernameField, passwordField) {
+    if (form.dataset.pmIntercepted) return;
+    form.dataset.pmIntercepted = "true";
+
+    form.addEventListener("submit", () => {
+      const username = usernameField.value.trim();
+      const password = passwordField.value;
+
+      if (username && password) {
+        const serviceName = currentDomain
+          .replace("www.", "")
+          .split(".")[0];
+        const capitalized = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+
+        // Store pending credentials for the popup to pick up
+        chrome.storage.local.set({
+          kp_pending: {
+            service: capitalized,
+            username: username,
+            password: password,
+            domain: currentDomain,
+            timestamp: Date.now(),
+          },
+        });
+
+        showNotification("🔐 Open Keyphoria extension to save this password", "info");
+      }
+    });
+  }
+
   // Listen for messages from background script
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "openSaveDialog") {
-      showNotification("Save dialog not yet implemented", "info");
+      if (detectedForms.length > 0) {
+        const last = detectedForms[detectedForms.length - 1];
+        const username = last.usernameField.value.trim();
+        const password = last.passwordField.value;
+        if (username && password) {
+          const serviceName = currentDomain
+            .replace("www.", "")
+            .split(".")[0];
+          const capitalized = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+
+          chrome.storage.local.set({
+            kp_pending: {
+              service: capitalized,
+              username: username,
+              password: password,
+              domain: currentDomain,
+              timestamp: Date.now(),
+            },
+          });
+          showNotification("🔐 Open Keyphoria extension to save this password", "info");
+        } else {
+          showNotification("No credentials detected on this page", "info");
+        }
+      } else {
+        showNotification("No login form detected on this page", "info");
+      }
     }
   });
 
@@ -304,6 +363,26 @@
       to {
         transform: translateX(0);
         opacity: 1;
+      }
+    }
+    @keyframes pmSlideDown {
+      from {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    @keyframes pmSlideUp {
+      from {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateY(-100%);
+        opacity: 0;
       }
     }
     @keyframes pmSlideOut {
