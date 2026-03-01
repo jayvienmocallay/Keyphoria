@@ -66,18 +66,37 @@ async function apiCall(endpoint, method = "GET", body = null) {
 // Authentication Functions
 async function checkSession() {
   try {
+    // First try the API session
     const data = await apiCall("/check-session");
     if (data.logged_in) {
       currentUser = data.username;
       showMainSection();
       await loadPasswords();
-    } else {
-      showAuthSection();
+      return;
     }
   } catch (error) {
-    console.error("Session check failed:", error);
-    showAuthSection();
+    // Session check failed (expected for cross-origin)
   }
+
+  // Try re-authenticating with stored credentials
+  try {
+    const stored = await chrome.storage.local.get(["kp_user", "kp_pass"]);
+    if (stored.kp_user && stored.kp_pass) {
+      const data = await apiCall("/login", "POST", {
+        username: stored.kp_user,
+        password: stored.kp_pass,
+      });
+      currentUser = data.username;
+      showMainSection();
+      await loadPasswords();
+      return;
+    }
+  } catch (error) {
+    // Stored credentials invalid, clear them
+    await chrome.storage.local.remove(["kp_user", "kp_pass"]);
+  }
+
+  showAuthSection();
 }
 
 async function login() {
@@ -96,6 +115,8 @@ async function login() {
     showLoading();
     const data = await apiCall("/login", "POST", { username, password });
     currentUser = data.username;
+    // Persist login for next popup open
+    await chrome.storage.local.set({ kp_user: username, kp_pass: password });
     showNotification("Login successful!");
     showMainSection();
     await loadPasswords();
@@ -137,6 +158,8 @@ async function register() {
     showLoading();
     const data = await apiCall("/register", "POST", { username, password });
     currentUser = username;
+    // Persist login for next popup open
+    await chrome.storage.local.set({ kp_user: username, kp_pass: password });
     showNotification("Registration successful!");
     showMainSection();
     await loadPasswords();
@@ -152,6 +175,7 @@ async function logout() {
     await apiCall("/logout", "POST");
     currentUser = null;
     passwords = [];
+    await chrome.storage.local.remove(["kp_user", "kp_pass"]);
     showNotification("Logged out successfully");
     showAuthSection();
   } catch (error) {
@@ -493,4 +517,63 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Initialize - check if already logged in
   await checkSession();
+
+  // Check for pending credentials to save
+  await checkPendingCredentials();
 });
+
+// Check if there are pending credentials from a form submission
+async function checkPendingCredentials() {
+  try {
+    const { kp_pending } = await chrome.storage.local.get("kp_pending");
+    if (!kp_pending) return;
+
+    // Only show if less than 5 minutes old
+    if (Date.now() - kp_pending.timestamp > 5 * 60 * 1000) {
+      await chrome.storage.local.remove("kp_pending");
+      return;
+    }
+
+    // Show the save prompt
+    const prompt = document.getElementById("save-prompt");
+    const detail = document.getElementById("save-prompt-detail");
+    detail.textContent = `${kp_pending.service} · ${kp_pending.username}`;
+    prompt.classList.remove("hidden");
+
+    // Save button
+    document.getElementById("save-prompt-yes").addEventListener("click", async () => {
+      try {
+        showLoading();
+        const response = await chrome.runtime.sendMessage({
+          action: "saveCredentials",
+          credentials: {
+            service: kp_pending.service,
+            username: kp_pending.username,
+            password: kp_pending.password,
+          },
+        });
+
+        if (response && response.success) {
+          showNotification("Password saved!");
+          await loadPasswords();
+        } else {
+          showNotification(response?.error || "Failed to save", true);
+        }
+      } catch (err) {
+        showNotification("Failed to save. Please log in first.", true);
+      } finally {
+        hideLoading();
+        prompt.classList.add("hidden");
+        await chrome.storage.local.remove("kp_pending");
+      }
+    });
+
+    // Dismiss button
+    document.getElementById("save-prompt-no").addEventListener("click", async () => {
+      prompt.classList.add("hidden");
+      await chrome.storage.local.remove("kp_pending");
+    });
+  } catch (error) {
+    console.error("Error checking pending credentials:", error);
+  }
+}
