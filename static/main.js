@@ -233,6 +233,14 @@ async function addPassword() {
     return;
   }
 
+  // Get the submit button and disable it with loader
+  const btn = document.querySelector("#add-password-modal .neo-btn");
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.style.opacity = "0.7";
+  btn.style.cursor = "not-allowed";
+  btn.innerHTML = '<span class="neo-btn-loader"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+
   try {
     const response = await fetch("/add", {
       method: "POST",
@@ -244,12 +252,22 @@ async function addPassword() {
     if (response.ok) {
       showNotification(data.success || "Password added!", "success");
       closeModal("add-password-modal");
+      // Clear the form
+      serviceEl.value = "";
+      usernameEl.value = "";
+      passwordEl.value = "";
     } else {
       showNotification(data.error || "An unknown error occurred.", "error");
     }
   } catch (error) {
     showNotification("Failed to add password. Please try again.", "error");
     console.error(error);
+  } finally {
+    // Restore button
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
+    btn.textContent = originalText;
   }
 }
 
