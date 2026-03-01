@@ -921,6 +921,103 @@ body::before {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(5px);
+  justify-content: center;
+  align-items: center;
+}
+
+/* ─── Neo-Brutalist Add Password Form ─── */
+.neo-form {
+  --neo-font: #323232;
+  --neo-font-sub: #666;
+  --neo-bg: #f5f0e8;
+  --neo-border: #1a1a2e;
+  padding: 28px 24px;
+  background: linear-gradient(135deg, #e8e0f0, #d4e0f8);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+  border-radius: 8px;
+  border: 2px solid var(--neo-border);
+  box-shadow: 6px 6px var(--neo-border);
+  position: relative;
+  width: 90%;
+  max-width: 360px;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.neo-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 26px;
+  font-weight: bold;
+  color: var(--neo-font-sub);
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.neo-close:hover {
+  color: #ff4444;
+}
+
+.neo-title {
+  color: var(--neo-font);
+  font-weight: 900;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.neo-title span {
+  color: var(--neo-font-sub);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.neo-input {
+  width: 100%;
+  height: 42px;
+  border-radius: 5px;
+  border: 2px solid var(--neo-border);
+  background-color: var(--neo-bg);
+  box-shadow: 4px 4px var(--neo-border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--neo-font);
+  padding: 5px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.neo-input::placeholder {
+  color: var(--neo-font-sub);
+  opacity: 0.8;
+}
+
+.neo-input:focus {
+  border: 2px solid #6a11cb;
+}
+
+.neo-btn {
+  margin: 12px auto 0 auto;
+  width: 100%;
+  height: 44px;
+  border-radius: 5px;
+  border: 2px solid var(--neo-border);
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  box-shadow: 4px 4px var(--neo-border);
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.neo-btn:active {
+  box-shadow: 0px 0px var(--neo-border);
+  transform: translate(3px, 3px);
 }
 
 .modal-content {
