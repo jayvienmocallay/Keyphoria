@@ -1,85 +1,115 @@
-# 🔐 Password Manager
+# 🔐 Keyphoria — Secure Password Manager
 
-A secure and user-friendly password manager built with Flask for the backend, a modern HTML/CSS/JavaScript frontend, and an optional Tkinter-based GUI for desktop use. This application allows users to securely store, retrieve, and manage passwords for various services.
+A modern, secure password manager with a Flask backend, Supabase (PostgreSQL) database, and a Chrome browser extension for autofilling credentials. Deployed to **Vercel**.
+
+🌐 **Live**: [keyphoria.vercel.app](https://keyphoria.vercel.app)
 
 ---
 
 ## ✨ Features
 
-- 🔒 **Secure Password Storage**: Passwords are encrypted using the `cryptography` library.
-- 📋 **Service Selection**: Predefined services like Facebook, Spotify, Netflix, Instagram, Twitter, and TikTok.
-- 🌐 **Modern Web Interface**: A responsive and visually appealing frontend built with HTML, CSS, and JavaScript.
-- 🖥️ **Desktop GUI**: A Tkinter-based GUI for local use.
-- 🔍 **Password Retrieval**: Retrieve stored passwords securely.
-- 🚪 **Exit Feature**: Option to exit the application after retrieving a password.
+- 🔒 **Encrypted Password Storage** — Passwords encrypted with the `cryptography` library (Fernet symmetric encryption)
+- 🔄 **Flip-Card Auth** — Animated login/signup form with toggle switch and bouncing ball loader
+- 🎨 **Keyphoria Loader** — Custom SVG loading screen with animated K-E-Y letters
+- 🧩 **Chrome Extension** — Auto-detect login forms and autofill saved credentials
+- 📋 **Password Management** — Add, view, edit, and delete passwords with animated action buttons
+- 🌐 **Vercel Deployment** — Serverless Flask on Vercel with Supabase PostgreSQL via connection pooler
+- 📱 **Responsive Design** — Works on desktop and mobile with adaptive layouts
 
 ---
 
-## 🛠️ Technologies Used
+## 🛠️ Tech Stack
 
-- **Backend**: Flask
-- **Frontend**: HTML, CSS, JavaScript
-- **Encryption**: `cryptography` library
-- **Desktop GUI**: Tkinter
-- **Data Storage**: JSON file (`passwords.json`)
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Flask, Flask-SQLAlchemy, Gunicorn |
+| **Database** | Supabase (PostgreSQL) via transaction pooler |
+| **Frontend** | HTML, CSS, JavaScript (Vanilla) |
+| **Encryption** | `cryptography` (Fernet) |
+| **Deployment** | Vercel (Serverless Python) |
+| **Extension** | Chrome Manifest V3 |
 
 ---
 
-## 🚀 Installation
+## 🚀 Getting Started
 
 ### Prerequisites
-- 🐍 Python 3.x installed on your system
-- 📦 `pip` (Python package manager)
+- Python 3.x
+- `pip` package manager
+- A Supabase account (for production) or SQLite (for local dev)
 
-### Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/password-manager.git
-   cd password-manager
-   ```
+### Local Development
 
-2. Install dependencies:
-   ```bash
-   pip install flask cryptography
-   ```
+```bash
+# Clone the repo
+git clone https://github.com/pasta-lover69/Password-Manager.git
+cd Password-Manager
 
-3. Run the Flask application:
-   ```bash
-   python app.py
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-4. Open your browser and navigate to:
-   ```
-   http://127.0.0.1:5000/
-   ```
+# Set environment variables
+set SECRET_KEY=your-secret-key
+set ENCRYPTION_KEY=your-fernet-key
+set DATABASE_URL=your-supabase-url  # optional, defaults to SQLite
+
+# Run the app
+python app.py
+```
+
+Open http://127.0.0.1:5000/ in your browser.
+
+### Browser Extension Setup
+
+1. **Download** — Clone/download the `browser-extension` folder
+2. **Chrome Extensions** — Go to `chrome://extensions` and enable **Developer Mode**
+3. **Load Unpacked** — Click "Load unpacked" and select the `browser-extension` folder
+4. **Pin & Login** — Pin the extension and log in with your Keyphoria account
+5. **Autofill** — Visit any login page and Keyphoria will offer to autofill credentials
 
 ---
 
-## 📂 File Structure
+## 📂 Project Structure
 
 ```
-Password Manager/
-├── 📄 app.py               # Flask backend
-├── 📄 gui.py               # Tkinter-based GUI
-├── 📁 templates/           # Frontend HTML templates
-│   └── 📄 index.html       # Main HTML file
-├── 📁 static/              # Frontend static files
-│   ├── 🎨 style.css        # CSS for styling
-│   └── ✨ main.js          # JavaScript for interactivity
-├── 📄 passwords.json       # Encrypted password storage
-├── 🔑 key.key              # Encryption key
-└── 📄 README.md            # Project documentation
+Password-Manager/
+├── app.py                    # Flask backend & API routes
+├── requirements.txt          # Python dependencies
+├── vercel.json               # Vercel deployment config
+├── templates/
+│   ├── base.html             # Base template with navbar
+│   ├── index.html            # Split-panel login page
+│   ├── signup.html           # Redirect to index
+│   ├── profile.html          # User profile & modals
+│   └── view_passwords.html   # Password table with actions
+├── static/
+│   ├── style.css             # All styles (loader, flip-card, buttons)
+│   ├── main.js               # Auth handlers & utilities
+│   └── keyphoria.png         # Favicon
+└── browser-extension/
+    ├── manifest.json          # Chrome extension manifest (V3)
+    ├── popup.html             # Extension popup UI
+    ├── background.js          # Service worker
+    ├── content.js             # Autofill content script
+    ├── config.js              # API configuration
+    └── icons/                 # Extension icons
 ```
+
+---
+
+## 🔑 Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `SECRET_KEY` | Flask session secret key |
+| `ENCRYPTION_KEY` | Fernet encryption key for passwords |
+| `DATABASE_URL` | Supabase PostgreSQL connection string |
+| `FLASK_ENV` | `production` or `development` |
+| `CORS_ORIGINS` | Allowed CORS origins |
 
 ---
 
 ## 📞 Contact
 
-For questions or support, please contact:
-
-- **Name**: Jayvien Mocallay  
+- **Name**: Jayvien Mocallay
 - **Email**: [jayvienmocallay7@example.com](mailto:jayvienmocallay7@example.com)
-
----
-
-Let me know if you'd like further adjustments or enhancements!
