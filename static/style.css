@@ -522,24 +522,23 @@ body::before {
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #e8e0f0, #d4e0f8);
+  border-radius: 8px;
+  border: 2px solid #1a1a2e;
+  box-shadow: 6px 6px #1a1a2e;
   padding: 30px;
   width: 100%;
   max-width: 400px;
   text-align: center;
-  color: #333;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #323232;
 }
 
 /* Typography */
 .title {
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 900;
   margin-bottom: 10px;
-  color: #333;
+  color: #1a1a2e;
 }
 
 .subtitle {
@@ -884,30 +883,42 @@ body::before {
 /* Tables */
 .password-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-top: 20px;
+  border: 2px solid #1a1a2e;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 4px 4px #1a1a2e;
 }
 
 .password-table th,
 .password-table td {
-  border: 1px solid #ddd;
+  border: 2px solid #1a1a2e;
   padding: 16px;
   text-align: left;
   vertical-align: middle;
 }
 
 .password-table th {
-  background: linear-gradient(135deg, #6a11cb, #2575fc);
-  color: white;
-  font-weight: bold;
+  background: #1a1a2e;
+  color: #f5f0e8;
+  font-weight: 800;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .password-table tr:nth-child(even) {
-  background-color: rgba(106, 17, 203, 0.03);
+  background-color: #f5f0e8;
+}
+
+.password-table tr:nth-child(odd) {
+  background-color: #ede8e0;
 }
 
 .password-table tr:hover {
-  background-color: rgba(106, 17, 203, 0.08);
+  background-color: #d4d0f0;
 }
 
 /* Modals */
