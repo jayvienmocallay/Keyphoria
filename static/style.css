@@ -281,6 +281,99 @@ body::before {
   color: #a78bfa;
 }
 
+/* ─── Download Button ─── */
+.dl-btn {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgb(27, 27, 27);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition-duration: 0.3s;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.11);
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.dl-svg {
+  fill: rgb(214, 178, 255);
+}
+
+.dl-bar {
+  width: 16px;
+  height: 4px;
+  border-bottom: 2px solid rgb(182, 143, 255);
+  border-left: 2px solid rgb(182, 143, 255);
+  border-right: 2px solid rgb(182, 143, 255);
+}
+
+.dl-tooltip {
+  position: absolute;
+  right: -90px;
+  opacity: 0;
+  background-color: rgb(12, 12, 12);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition-duration: 0.2s;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dl-tooltip::before {
+  position: absolute;
+  content: "";
+  width: 10px;
+  height: 10px;
+  background-color: rgb(12, 12, 12);
+  transform: rotate(45deg);
+  left: -5%;
+  transition-duration: 0.3s;
+}
+
+.dl-btn:hover .dl-tooltip {
+  opacity: 1;
+  transition-duration: 0.3s;
+}
+
+.dl-btn:hover {
+  background-color: rgb(150, 94, 255);
+  transition-duration: 0.3s;
+}
+
+.dl-btn:hover .dl-bar {
+  border-bottom-color: rgb(235, 235, 235);
+  border-left-color: rgb(235, 235, 235);
+  border-right-color: rgb(235, 235, 235);
+}
+
+.dl-btn:hover .dl-svg {
+  fill: rgb(255, 255, 255);
+  animation: dlSlideIn 0.6s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+}
+
+@keyframes dlSlideIn {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+}
+
 .guide-warning {
   display: flex;
   align-items: flex-start;
