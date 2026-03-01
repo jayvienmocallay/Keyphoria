@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Password Manager</title>
+    <title>Keyphoria</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <div class="container">
       <!-- Login/Register Section -->
       <div id="auth-section" class="section">
-        <h1>🔐 Password Manager</h1>
+        <h1>🔐 Keyphoria</h1>
 
         <div id="login-form" class="form-container">
           <h2>Login</h2>
@@ -63,10 +63,23 @@
         </div>
       </div>
 
+      <!-- Save Password Prompt (shown when pending credentials detected) -->
+      <div id="save-prompt" class="save-prompt hidden">
+        <div class="save-prompt-icon">🔐</div>
+        <div class="save-prompt-text">
+          <strong>Save password?</strong>
+          <div id="save-prompt-detail" class="save-prompt-detail"></div>
+        </div>
+        <div class="save-prompt-actions">
+          <button id="save-prompt-yes" class="btn btn-primary btn-sm">Save</button>
+          <button id="save-prompt-no" class="btn btn-secondary btn-sm">Dismiss</button>
+        </div>
+      </div>
+
       <!-- Password Management Section -->
       <div id="main-section" class="section hidden">
         <div class="header">
-          <h1>🔐 My Passwords</h1>
+          <h1>🔐 Keyphoria</h1>
           <div class="user-info">
             <span id="username-display"></span>
             <button id="logout-btn" class="btn btn-secondary btn-sm">
