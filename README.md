@@ -6,7 +6,7 @@ A modern, secure password manager with a Flask backend, Supabase (PostgreSQL) da
 
 ---
 
-## ✨ Features
+## Features
 
 - 🔒 **Encrypted Password Storage** — Passwords encrypted with the `cryptography` library (Fernet symmetric encryption)
 - 🔄 **Flip-Card Auth** — Animated login/signup form with toggle switch and bouncing ball loader
