@@ -5,17 +5,20 @@
 
   let detectedForms = [];
   let currentDomain = window.location.hostname;
-  let API_URL = "http://localhost:5000"; // Default, updated via background script
 
-  // Get API URL from background script
-  async function getApiUrl() {
+  async function requestCredentialsForDomain(domain) {
     try {
-      const response = await chrome.runtime.sendMessage({ action: "getApiUrl" });
-      if (response && response.url) {
-        API_URL = response.url;
-      }
+      const response = await chrome.runtime.sendMessage({
+        action: "getCredentials",
+        domain,
+      });
+      return response;
     } catch (error) {
-      console.warn("Failed to get API URL from background, using default");
+      return {
+        success: false,
+        errorCode: "messaging_failed",
+        error: "Unable to communicate with extension background service",
+      };
     }
   }
 
@@ -26,7 +29,7 @@
     forms.forEach((form) => {
       const passwordFields = form.querySelectorAll('input[type="password"]');
       const usernameFields = form.querySelectorAll(
-        'input[type="text"], input[type="email"], input[name*="user"], input[name*="email"], input[autocomplete="username"]'
+        'input[type="text"], input[type="email"], input[name*="user"], input[name*="email"], input[autocomplete="username"]',
       );
 
       if (passwordFields.length > 0 && usernameFields.length > 0) {
@@ -82,7 +85,7 @@
 
     // Insert button before the submit button or at the end of the form
     const submitButton = form.querySelector(
-      'button[type="submit"], input[type="submit"]'
+      'button[type="submit"], input[type="submit"]',
     );
     if (submitButton) {
       submitButton.parentNode.insertBefore(button, submitButton);
@@ -94,26 +97,31 @@
   // Autofill form with saved credentials
   async function autofillForm(usernameField, passwordField) {
     try {
-      const response = await fetch(`${API_URL}/get-all-passwords`, {
-        credentials: "include",
-      });
+      const response = await requestCredentialsForDomain(currentDomain);
 
-      if (!response.ok) {
-        showNotification(
-          "Please login to the Password Manager extension first",
-          "error"
-        );
+      if (!response || !response.success) {
+        if (response?.errorCode === "auth_required") {
+          showNotification(
+            "Please login to the Password Manager extension first",
+            "error",
+          );
+        } else if (response?.errorCode === "api_unreachable") {
+          showNotification(
+            "Cannot reach Keyphoria server. Check your connection/API URL.",
+            "error",
+          );
+        } else {
+          showNotification(
+            response?.error || "Failed to retrieve credentials",
+            "error",
+          );
+        }
         return;
       }
 
-      const passwords = await response.json();
-
-      // Find matching credentials for current domain
-      const matching = passwords.filter(
-        (pwd) =>
-          currentDomain.includes(pwd.service.toLowerCase()) ||
-          pwd.service.toLowerCase().includes(currentDomain)
-      );
+      const matching = Array.isArray(response.credentials)
+        ? response.credentials
+        : [];
 
       if (matching.length === 0) {
         showNotification("No saved passwords found for this site", "info");
@@ -187,7 +195,7 @@
             <div style="font-weight: 600; color: #333;">${cred.service}</div>
             <div style="font-size: 14px; color: #666;">${cred.username}</div>
           </div>
-        `
+        `,
           )
           .join("")}
       </div>
@@ -276,10 +284,9 @@
       const password = passwordField.value;
 
       if (username && password) {
-        const serviceName = currentDomain
-          .replace("www.", "")
-          .split(".")[0];
-        const capitalized = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+        const serviceName = currentDomain.replace("www.", "").split(".")[0];
+        const capitalized =
+          serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
 
         // Small delay so the page processes the submit first
         setTimeout(() => {
@@ -377,31 +384,43 @@
     }
 
     // Save button
-    popup.querySelector("#kp-popup-save").addEventListener("click", async () => {
-      const saveBtn = popup.querySelector("#kp-popup-save");
-      saveBtn.textContent = "Saving...";
-      saveBtn.style.opacity = "0.7";
+    popup
+      .querySelector("#kp-popup-save")
+      .addEventListener("click", async () => {
+        const saveBtn = popup.querySelector("#kp-popup-save");
+        saveBtn.textContent = "Saving...";
+        saveBtn.style.opacity = "0.7";
 
-      try {
-        const response = await chrome.runtime.sendMessage({
-          action: "saveCredentials",
-          credentials: { service, username, password },
-        });
+        try {
+          const response = await chrome.runtime.sendMessage({
+            action: "saveCredentials",
+            credentials: { service, username, password },
+          });
 
-        if (response && response.success) {
-          showNotification("✅ Password saved to Keyphoria!", "success");
-        } else {
-          showNotification(response?.error || "Failed to save. Log in to Keyphoria first.", "error");
+          if (response && response.success) {
+            showNotification("✅ Password saved to Keyphoria!", "success");
+          } else {
+            showNotification(
+              response?.error || "Failed to save. Log in to Keyphoria first.",
+              "error",
+            );
+          }
+        } catch (err) {
+          showNotification(
+            "Failed to save. Log in to Keyphoria extension first.",
+            "error",
+          );
         }
-      } catch (err) {
-        showNotification("Failed to save. Log in to Keyphoria extension first.", "error");
-      }
-      dismissPopup();
-    });
+        dismissPopup();
+      });
 
     // Dismiss / close
-    popup.querySelector("#kp-popup-dismiss").addEventListener("click", dismissPopup);
-    popup.querySelector("#kp-popup-close").addEventListener("click", dismissPopup);
+    popup
+      .querySelector("#kp-popup-dismiss")
+      .addEventListener("click", dismissPopup);
+    popup
+      .querySelector("#kp-popup-close")
+      .addEventListener("click", dismissPopup);
 
     // Auto-dismiss after 30 seconds
     setTimeout(() => {
@@ -418,7 +437,8 @@
         const password = last.passwordField.value;
         if (username && password) {
           const serviceName = currentDomain.replace("www.", "").split(".")[0];
-          const capitalized = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+          const capitalized =
+            serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
           showSavePopup(capitalized, username, password);
         } else {
           showNotification("No credentials detected on this page", "info");
@@ -431,8 +451,6 @@
 
   // Initialize: get API URL, then detect forms
   async function init() {
-    await getApiUrl();
-
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", detectLoginForms);
     } else {
