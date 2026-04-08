@@ -5,7 +5,6 @@ A modern, secure password manager with a Flask backend, Supabase (PostgreSQL) da
 🌐 **Live**: [keyphoria.vercel.app](https://keyphoria.vercel.app)
 
 ---
-
 ## Features
 
 - 🔒 **Encrypted Password Storage** — Passwords encrypted with the `cryptography` library (Fernet symmetric encryption)
