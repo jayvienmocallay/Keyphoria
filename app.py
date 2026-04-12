@@ -88,9 +88,7 @@ def get_encryption_key():
         pass  # Read-only filesystem (e.g., Vercel) — key lives in memory only
     return key
 
-
 fernet = Fernet(get_encryption_key())
-
 
 # Database Models
 class User(db.Model):
@@ -109,7 +107,6 @@ class User(db.Model):
     def check_password(self, password):
         """Verify password against hash"""
         return check_password_hash(self.password_hash, password)
-
 
 class Password(db.Model):
     """Password storage model with encryption"""
