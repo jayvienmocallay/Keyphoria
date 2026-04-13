@@ -3,7 +3,6 @@
 A modern, secure password manager with a Flask backend, Supabase (PostgreSQL) database, and a Chrome browser extension for autofilling credentials. Deployed to **Vercel**.
 
 🌐 **Live**: [keyphoria.vercel.app](https://keyphoria.vercel.app)
-
 ---
 ## Features
 
