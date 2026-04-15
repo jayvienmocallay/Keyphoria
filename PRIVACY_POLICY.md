@@ -66,4 +66,4 @@ We may update this privacy policy from time to time. Any changes will be reflect
 For questions or concerns about this privacy policy, contact:
 
 **Jayvien Mocallay**  
-Email: jayvienmocallay7@example.com
+Email: jayvienmocallay01@gmail.com
