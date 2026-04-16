@@ -1,5 +1,6 @@
 # Quick Start - Password Manager Browser Extension
 
+
 @echo off
 echo.
 echo ============================================================
