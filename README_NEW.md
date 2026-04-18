@@ -299,5 +299,3 @@ Created as a personal project to learn:
 ---
 
 **⭐ If you find this useful, please star the repository!**
-
-Made with ❤️ for better password security
