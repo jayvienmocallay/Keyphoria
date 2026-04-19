@@ -117,7 +117,7 @@ Password Manager/
 - 🧪 **Test Suite** - API testing script included
 - 📖 **Well Documented** - Extensive documentation and comments
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -145,7 +145,7 @@ Edit `browser-extension/popup.js` to change the API URL:
 const API_URL = "http://localhost:5000"; // Change for production
 ```
 
-## 🧪 Testing
+## Testing
 
 Run the test suite to verify everything works:
 
@@ -218,7 +218,7 @@ The codebase has been significantly improved:
 - **Extension:** Web Extensions API (Chrome/Firefox compatible)
 - **Database:** SQLite (dev) / PostgreSQL (prod)
 
-## 🔒 Security Notes
+## Security Notes
 
 ⚠️ **Important Security Practices:**
 
@@ -229,7 +229,7 @@ The codebase has been significantly improved:
 5. **Regularly update dependencies**
 6. **Use strong master password**
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **Extension can't connect to API:**
 
@@ -255,7 +255,7 @@ The codebase has been significantly improved:
 - Check file permissions
 - Verify SQLAlchemy version
 
-## 📝 TODO / Future Enhancements
+## TODO / Future Enhancements
 
 - [ ] Password strength indicator
 - [ ] Breach detection (HaveIBeenPwned API)
@@ -267,7 +267,7 @@ The codebase has been significantly improved:
 - [ ] Biometric unlock support
 - [ ] Dark mode
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please:
 
@@ -277,11 +277,11 @@ Contributions are welcome! Please:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 MIT License - See LICENSE file for details
 
-## 👨‍💻 Author
+## Author
 
 Created as a personal project to learn:
 
@@ -290,7 +290,7 @@ Created as a personal project to learn:
 - Cryptography implementation
 - Code refactoring and clean code principles
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Flask framework and community
 - Cryptography library contributors
@@ -298,4 +298,4 @@ Created as a personal project to learn:
 
 ---
 
-**⭐ If you find this useful, please star the repository!**
+** If you find this useful, please star the repository!**
